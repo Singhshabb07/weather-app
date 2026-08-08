@@ -1,0 +1,406 @@
+:root {
+  --ink: #0b1120;
+  --dusk: #1b2a4a;
+  --day-top: #4f8fd6;
+  --day-bottom: #bcdcf2;
+  --glass: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --amber: #ffb25b;
+  --text: #f4f7fb;
+  --text-dim: rgba(244, 247, 251, 0.68);
+  --text-faint: rgba(244, 247, 251, 0.42);
+  --radius: 22px;
+
+  /* set/overridden by JS depending on time of day + condition */
+  --sky-top: var(--dusk);
+  --sky-bottom: var(--ink);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--ink);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------- animated sky ---------- */
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+  transition: background 1.2s ease;
+  overflow: hidden;
+}
+
+.sun-moon {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6df, var(--amber) 60%, transparent 72%);
+  box-shadow: 0 0 90px 20px rgba(255, 178, 91, 0.45);
+  transform: translateX(-50%);
+  transition: opacity 1s ease, background 1s ease, box-shadow 1s ease;
+}
+
+.sun-moon.is-moon {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #cfd8e8 55%, transparent 72%);
+  box-shadow: 0 0 60px 12px rgba(207, 216, 232, 0.35);
+}
+
+.clouds {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.clouds.is-visible { opacity: 1; }
+
+.cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  filter: blur(1px);
+  animation: drift linear infinite;
+}
+
+.cloud::before, .cloud::after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  border-radius: 999px;
+}
+
+@keyframes drift {
+  from { transform: translateX(-20vw); }
+  to { transform: translateX(120vw); }
+}
+
+.rain {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+.rain.is-visible { opacity: 1; }
+
+.drop {
+  position: absolute;
+  top: -10%;
+  width: 2px;
+  height: 60px;
+  background: linear-gradient(180deg, transparent, rgba(210, 230, 255, 0.55));
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  to { transform: translateY(120vh); }
+}
+
+/* ---------- layout ---------- */
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- search ---------- */
+
+.search {
+  display: flex;
+  gap: 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px);
+  border-radius: 999px;
+  padding: 6px 6px 6px 18px;
+}
+
+.search input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  padding: 10px 0;
+}
+
+.search input::placeholder {
+  color: var(--text-faint);
+}
+
+.search button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.search button:hover { background: rgba(255, 255, 255, 0.28); }
+.search button:focus-visible,
+.locate-btn:focus-visible,
+.search input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.locate-btn {
+  align-self: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.locate-btn:hover { color: var(--text); }
+
+/* ---------- status ---------- */
+
+.status {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 24px 12px;
+}
+
+.status.is-error { color: #ffb0a8; }
+
+/* ---------- now ---------- */
+
+.now {
+  text-align: center;
+  padding-top: 8px;
+}
+
+.place {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.datetime {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 12px 0 4px;
+}
+
+.icon-wrap {
+  width: 92px;
+  height: 92px;
+}
+
+.icon-wrap svg { width: 100%; height: 100%; }
+
+.temp {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 88px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.condition {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.feels-like {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.stat {
+  flex: 1;
+  max-width: 130px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px);
+  border-radius: 16px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.stat-value {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* ---------- hourly ---------- */
+
+.hourly h2, .daily h2 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin: 0 0 12px 4px;
+}
+
+.hourly-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+}
+
+.hourly-scroll::-webkit-scrollbar { display: none; }
+
+.hour-card {
+  flex: 0 0 auto;
+  width: 66px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px);
+  border-radius: 16px;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.hour-card .h-time {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.hour-card svg { width: 28px; height: 28px; }
+
+.hour-card .h-temp {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---------- daily ---------- */
+
+.daily-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-row {
+  display: grid;
+  grid-template-columns: 64px 32px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px);
+  border-radius: 14px;
+  padding: 10px 16px;
+}
+
+.day-row .d-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.day-row svg { width: 26px; height: 26px; }
+
+.d-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 14px;
+  justify-self: end;
+}
+
+.d-range .lo { color: var(--text-faint); }
+
+.d-bar {
+  height: 4px;
+  width: 60px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.d-bar span {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: linear-gradient(90deg, #8fc4ee, var(--amber));
+  border-radius: 2px;
+}
+
+@media (max-width: 380px) {
+  .temp { font-size: 72px; }
+  .icon-wrap { width: 76px; height: 76px; }
+}
